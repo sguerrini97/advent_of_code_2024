@@ -55,5 +55,5 @@ func main() {
 		result = part2(input_file)
 	}
 
-	fmt.Println(result)
+	fmt.Printf("Solution: %d\n", result)
 }

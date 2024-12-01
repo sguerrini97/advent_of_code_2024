@@ -29,7 +29,7 @@ func part1(input_file *os.File) int {
 	sort.Sort(sort.IntSlice(ids1))
 	sort.Sort(sort.IntSlice(ids2))
 
-	// compute sum of sitances
+	// compute sum of ditances
 	sum := 0
 	for i := range ids1 {
 		distance := ids2[i] - ids1[i]
@@ -101,5 +101,5 @@ func main() {
 		result = part2(input_file)
 	}
 
-	fmt.Println(result)
+	fmt.Printf("Solution: %d\n", result)
 }
