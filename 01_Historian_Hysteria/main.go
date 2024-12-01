@@ -44,7 +44,6 @@ func part1(input_file *os.File) int {
 }
 
 func part2(input_file *os.File) int {
-
 	good_keys := make(map[int]bool)
 	weigths := make(map[int]int)
 
@@ -59,7 +58,7 @@ func part2(input_file *os.File) int {
 		// mark keys that appear in list 1
 		good_keys[id1] = true
 
-		// count how many times keys appears in list 2
+		// count how many times keys appear in list 2
 		current := weigths[id2]
 		weigths[id2] = current + 1
 	}
