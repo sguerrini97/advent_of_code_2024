@@ -33,14 +33,34 @@ func part1(input_file *os.File) int {
 }
 
 func part2(input_file *os.File) int {
+	sum := 0
+	instruction_regexp := regexp.MustCompile("(mul\\([0-9]{1,},[0-9]{1,}\\)|do\\(\\)|don't\\(\\))")
+	do := true
+
 	// read file line by line
 	scanner := bufio.NewScanner(input_file)
 	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Println(line)
+		// find all instructions
+		instructions := instruction_regexp.FindAllString(scanner.Text(), -1)
+		for _, instruction := range instructions {
+			// handle supported instructions
+			if instruction == "do()" {
+				do = true
+			} else if instruction == "don't()" {
+				do = false
+			} else if do {
+				var x int
+				var y int
+
+				// extract operands
+				fmt.Sscanf(instruction, "mul(%d,%d)", &x, &y)
+
+				sum += x * y
+			}
+		}
 	}
 
-	return 0
+	return sum
 }
 
 func main() {
