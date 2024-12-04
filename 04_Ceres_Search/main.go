@@ -129,25 +129,17 @@ func check_word(word *[]rune, i int, j int, mat *[][]rune) int {
 	return found
 }
 
-func part1(input_file *os.File) int {
+func part1(mat *[][]rune) int {
 	xmas_count := 0
-	var mat [][]rune
-
-	// read file line by line
-	scanner := bufio.NewScanner(input_file)
-	for scanner.Scan() {
-		// convert lines to a rune matrix
-		mat = append(mat, []rune(scanner.Text()))
-	}
 
 	looking_for := []rune{'X', 'M', 'A', 'S'}
 
-	for i := range mat {
-		for j := range mat[i] {
-			r := mat[i][j]
+	for i := range *mat {
+		for j := range (*mat)[i] {
+			r := (*mat)[i][j]
 
 			if r == looking_for[0] {
-				found := check_word(&looking_for, i, j, &mat)
+				found := check_word(&looking_for, i, j, mat)
 				xmas_count += found
 			}
 		}
@@ -156,13 +148,7 @@ func part1(input_file *os.File) int {
 	return xmas_count
 }
 
-func part2(input_file *os.File) int {
-	// read file line by line
-	scanner := bufio.NewScanner(input_file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Println(line)
-	}
+func part2(mat *[][]rune) int {
 
 	return 0
 }
@@ -185,11 +171,20 @@ func main() {
 
 	defer input_file.Close()
 
+	var mat [][]rune
+
+	// read file line by line
+	scanner := bufio.NewScanner(input_file)
+	for scanner.Scan() {
+		// convert lines to a rune matrix
+		mat = append(mat, []rune(scanner.Text()))
+	}
+
 	result := -1
 	if *part == 1 {
-		result = part1(input_file)
+		result = part1(&mat)
 	} else if *part == 2 {
-		result = part2(input_file)
+		result = part2(&mat)
 	}
 
 	fmt.Printf("Solution: %d\n", result)
