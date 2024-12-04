@@ -149,8 +149,41 @@ func part1(mat *[][]rune) int {
 }
 
 func part2(mat *[][]rune) int {
+	found := 0
 
-	return 0
+	side := len(*mat)
+	for i := range side {
+		// skip first and last row
+		if i == 0 || i == side-1 {
+			continue
+		}
+
+		for j := range side {
+			// skip first and last column
+			if j == 0 || j == side-1 {
+				continue
+			}
+
+			// check for X-MAS
+			r := (*mat)[i][j]
+			if r == 'A' {
+				// we may be at the center of an X-MAS
+				// check for the corners to confirm that
+				ul := (*mat)[i-1][j-1]
+				dr := (*mat)[i+1][j+1]
+				ur := (*mat)[i-1][j+1]
+				dl := (*mat)[i+1][j-1]
+
+				if (ul == 'M' && dr == 'S') || (dr == 'M' && ul == 'S') {
+					if (ur == 'M' && dl == 'S') || (dl == 'M' && ur == 'S') {
+						found += 1
+					}
+				}
+			}
+		}
+	}
+
+	return found
 }
 
 func main() {
