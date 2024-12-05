@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -97,8 +99,46 @@ func part1(constraints map[int][]int, updates [][]int) int {
 }
 
 func part2(constraints map[int][]int, updates [][]int) int {
+	sum := 0
 
-	return 0
+	// check each update
+	for _, update := range updates {
+		forbidden := make(map[int]bool)
+
+		for _, page := range update {
+			// if this page cannot appear, this update is not valid
+			_, present := forbidden[page]
+			if present {
+				// sort using our constraints
+				sort.Slice(update, func(i int, j int) bool {
+					a := update[i]
+					b := update[j]
+
+					_, present := constraints[b]
+					if present && slices.Contains(constraints[b], a) {
+						return true
+					}
+
+					return false
+				})
+
+				// we fixed this update so we can skip to the next one
+				i := len(update) / 2
+				sum += update[i]
+				break
+			}
+
+			// check to add restriction for pages after this one
+			to_forbid, present := constraints[page]
+			if present {
+				for _, forbidden_page := range to_forbid {
+					forbidden[forbidden_page] = true
+				}
+			}
+		}
+	}
+
+	return sum
 }
 
 func main() {
