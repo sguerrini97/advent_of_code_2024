@@ -149,7 +149,11 @@ func obstacle_on_path(area [][]rune, start Vec2, direction Vec2) *Vec2 {
 	return nil
 }
 
-func check_loop(area [][]rune, start Vec2, direction Vec2) bool {
+func same_position(a Vec2, b Vec2) bool {
+	return a.I == b.I && a.J == b.J
+}
+
+func check_loop(area [][]rune, obstacle Vec2, start Vec2, direction Vec2) bool {
 	type key struct {
 		PI int
 		PJ int
@@ -178,7 +182,7 @@ func check_loop(area [][]rune, start Vec2, direction Vec2) bool {
 			break
 		}
 
-		if is_obstacle(area, next_position) {
+		if is_obstacle(area, next_position) || same_position(next_position, obstacle) {
 			direction = turn_right(direction)
 			continue
 		}
@@ -195,7 +199,13 @@ func part2(area [][]rune, guard *Guard) int {
 	position := guard.Position
 	direction := guard.Direction
 
+	blacklist := make(map[Vec2]bool)
+
 	for true {
+		// we can't place an obstacle were we already
+		// this also takes care of the guard initial position
+		blacklist[position] = true
+
 		right := turn_right(direction)
 		next_position := step(position, direction)
 
@@ -208,18 +218,18 @@ func part2(area [][]rune, guard *Guard) int {
 			continue
 		}
 
-		// if we have an obstacle on the right and not in front of us
-		// it makes sense to try adding an obstacle in front of us and check for a loop
-		obstacle := obstacle_on_path(area, position, right)
-		if obstacle != nil {
-			obstacle_to_test := step(position, direction)
-			area[obstacle_to_test.I][obstacle_to_test.J] = 'O'
-
-			if check_loop(area, position, direction) {
-				found += 1
+		_, blacklisted := blacklist[next_position]
+		if !blacklisted {
+			// if we have an obstacle on the right
+			// it makes sense to try to add an obstacle in front of us
+			obstacle := obstacle_on_path(area, position, right)
+			if obstacle != nil {
+				if check_loop(area, next_position, position, right) {
+					found += 1
+					// exclude this position from future obstacles
+					blacklist[next_position] = true
+				}
 			}
-
-			area[obstacle_to_test.I][obstacle_to_test.J] = '.'
 		}
 
 		position = next_position
