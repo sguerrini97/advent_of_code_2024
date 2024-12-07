@@ -8,30 +8,30 @@ import (
 	"os"
 )
 
-type MatrixPoint struct {
+type Vec2 struct {
 	I int
 	J int
 }
 
 type Guard struct {
-	Position  MatrixPoint
-	Direction MatrixPoint
+	Position  Vec2
+	Direction Vec2
 }
 
-func turn_right(p *MatrixPoint) {
+func turn_right(p Vec2) Vec2 {
+	turned := Vec2{0, 0}
+
 	if p.I == 1 {
-		p.I = 0
-		p.J = -1
+		turned.J = -1
 	} else if p.J == -1 {
-		p.I = -1
-		p.J = 0
+		turned.I = -1
 	} else if p.I == -1 {
-		p.I = 0
-		p.J = 1
+		turned.J = 1
 	} else if p.J == 1 {
-		p.I = 1
-		p.J = 0
+		turned.I = 1
 	}
+
+	return turned
 }
 
 func parse(input_path *string) ([][]rune, *Guard) {
@@ -58,13 +58,13 @@ func parse(input_path *string) ([][]rune, *Guard) {
 			for j, r := range line {
 				switch r {
 				case 'v':
-					guard = &Guard{Position: MatrixPoint{i, j}, Direction: MatrixPoint{1, 0}}
+					guard = &Guard{Position: Vec2{i, j}, Direction: Vec2{1, 0}}
 				case '<':
-					guard = &Guard{Position: MatrixPoint{i, j}, Direction: MatrixPoint{0, -1}}
+					guard = &Guard{Position: Vec2{i, j}, Direction: Vec2{0, -1}}
 				case '^':
-					guard = &Guard{Position: MatrixPoint{i, j}, Direction: MatrixPoint{-1, 0}}
+					guard = &Guard{Position: Vec2{i, j}, Direction: Vec2{-1, 0}}
 				case '>':
-					guard = &Guard{Position: MatrixPoint{i, j}, Direction: MatrixPoint{0, 1}}
+					guard = &Guard{Position: Vec2{i, j}, Direction: Vec2{0, 1}}
 				}
 			}
 			i += 1
@@ -72,6 +72,33 @@ func parse(input_path *string) ([][]rune, *Guard) {
 	}
 
 	return area, guard
+}
+
+func out_of_area(area [][]rune, position Vec2) bool {
+	if position.I < 0 || position.I >= len(area) {
+		return true
+	}
+
+	if position.J < 0 || position.J >= len(area[position.I]) {
+		return true
+	}
+
+	return false
+}
+
+func is_obstacle(area [][]rune, position Vec2) bool {
+	r := area[position.I][position.J]
+
+	switch r {
+	case '#', 'O':
+		return true
+	default:
+		return false
+	}
+}
+
+func step(position Vec2, direction Vec2) Vec2 {
+	return Vec2{I: position.I + direction.I, J: position.J + direction.J}
 }
 
 func part1(area [][]rune, guard *Guard) int {
@@ -87,21 +114,13 @@ func part1(area [][]rune, guard *Guard) int {
 		}
 
 		// compute next position in the area
-		next_position := MatrixPoint{
-			guard.Position.I + guard.Direction.I,
-			guard.Position.J + guard.Direction.J,
-		}
-
-		// check if the guard will be out of the area
-		if next_position.I < 0 || next_position.I >= len(area) ||
-			next_position.J < 0 || next_position.J >= len(area[guard.Position.I]) {
+		next_position := step(guard.Position, guard.Direction)
+		if out_of_area(area, next_position) {
 			break
 		}
 
-		// check for obstacle
-		r := area[next_position.I][next_position.J]
-		if r == '#' {
-			turn_right(&guard.Direction)
+		if is_obstacle(area, next_position) {
+			guard.Direction = turn_right(guard.Direction)
 			continue
 		}
 
@@ -112,9 +131,101 @@ func part1(area [][]rune, guard *Guard) int {
 	return steps
 }
 
-func part2(area [][]rune, guard *Guard) int {
+func obstacle_on_path(area [][]rune, start Vec2, direction Vec2) *Vec2 {
+	position := start
+	for true {
+		position = step(position, direction)
 
-	return 0
+		if out_of_area(area, position) {
+			break
+		}
+
+		// check if we stepped into an obstacle
+		if is_obstacle(area, position) {
+			return &position
+		}
+	}
+
+	return nil
+}
+
+func check_loop(area [][]rune, start Vec2, direction Vec2) bool {
+	type key struct {
+		PI int
+		PJ int
+		DI int
+		DJ int
+	}
+
+	// map to track movement
+	visited := make(map[key]bool)
+
+	position := start
+	for true {
+		k := key{position.I, position.J, direction.I, direction.J}
+
+		// check if we already visited this position in this direction
+		v, back_on_the_same_path := visited[k]
+		if back_on_the_same_path && v {
+			return true
+		}
+
+		// mark current position as visited in the current direction
+		visited[k] = true
+
+		next_position := step(position, direction)
+		if out_of_area(area, next_position) {
+			break
+		}
+
+		if is_obstacle(area, next_position) {
+			direction = turn_right(direction)
+			continue
+		}
+
+		position = next_position
+	}
+
+	return false
+}
+
+func part2(area [][]rune, guard *Guard) int {
+	found := 0
+
+	position := guard.Position
+	direction := guard.Direction
+
+	for true {
+		right := turn_right(direction)
+		next_position := step(position, direction)
+
+		if out_of_area(area, next_position) {
+			break
+		}
+
+		if is_obstacle(area, next_position) {
+			direction = right
+			continue
+		}
+
+		// if we have an obstacle on the right and not in front of us
+		// it makes sense to try adding an obstacle in front of us and check for a loop
+		obstacle := obstacle_on_path(area, position, right)
+		if obstacle != nil {
+			obstacle_to_test := step(position, direction)
+			area[obstacle_to_test.I][obstacle_to_test.J] = 'O'
+
+			if check_loop(area, position, direction) {
+				found += 1
+			}
+
+			area[obstacle_to_test.I][obstacle_to_test.J] = '.'
+		}
+
+		position = next_position
+	}
+
+	return found
 }
 
 func main() {
